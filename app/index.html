@@ -58,6 +58,9 @@
 <p id="ai" style="max-width:340px;margin:8px auto;color:#555"></p>
 <div>
   <button id="reveal" onclick="reveal()">顯示答案</button>
+  <button id="choiceBtn" class="ghost" onclick="startChoice()">四選一作答</button>
+  <div id="choices"></div>
+  <button id="nextBtn" onclick="finishChoice()" hidden>下一張 →</button>
   <button id="ok" onclick="mark(true)" hidden>記得 ✓</button>
   <button id="no" onclick="mark(false)" class="warn" hidden>忘了 ✗</button>
   <button id="aiBtn" onclick="aiExample()" hidden>AI 例句</button>
@@ -80,6 +83,7 @@
 <script src="words.js"></script>
 <script src="srs.js"></script>
 <script src="csv.js"></script>
+<script src="quiz.js"></script>
 <script>
 // 單字包已搬到 words.js（Sprint 4：全隊共編，進 Git）
 
@@ -118,24 +122,27 @@ const $ = id => document.getElementById(id);
 function next(){
   $("aiBtn").hidden = true;          // Sprint 2：換卡時藏回 AI 鈕、清空例句
   $("ai").textContent = "";
+  $("choices").textContent = "";     // 第 12 組：換卡時清掉四選一的選項
+  $("nextBtn").hidden = true;
+  picked = null;
   if (queue.length === 0){
     $("card").textContent = "今天沒有到期的卡——明天見！";
     $("meaning").innerHTML = "&nbsp;";
-    $("reveal").hidden = $("ok").hidden = $("no").hidden = true;
+    $("reveal").hidden = $("choiceBtn").hidden = $("ok").hidden = $("no").hidden = true;
     stats();                          // 佇列清空也要更新張數，不然會停在「剩 1 張」
     return;
   }
   cur = queue[0];
   $("card").textContent = cur.en;
   $("meaning").innerHTML = "&nbsp;";
-  $("reveal").hidden = false;
+  $("reveal").hidden = $("choiceBtn").hidden = false;
   $("ok").hidden = $("no").hidden = true;
   stats();
 }
 
 function reveal(){
   $("meaning").textContent = cur.zh;
-  $("reveal").hidden = true;
+  $("reveal").hidden = $("choiceBtn").hidden = true;
   $("ok").hidden = $("no").hidden = false;
   $("aiBtn").hidden = false;         // Sprint 2：翻面後才給 AI 例句
 }
@@ -152,7 +159,41 @@ function mark(ok){
 }
 
 function stats(){
-  $("stats").textContent = "今日佇列：剩 " + queue.length + " 張";
+  const dueToday = countDue(WORDS.map(stateOf), today());   // 第 12 組：接上 srs.js 的 countDue
+  $("stats").textContent = "今日佇列：剩 " + queue.length + " 張｜今天到期：" + dueToday + " 張";
+}
+
+// ---------- 第 12 組延伸：四選一作答（出題是 quiz.js 的純函式；結果交給 mark()，和「記得／忘了」走同一條排程） ----------
+let picked = null;                    // 這張卡四選一的結果：null＝還沒作答
+
+// 用途：把目前這張卡改成四選一作答，畫出四個中文選項
+function startChoice(){
+  $("reveal").hidden = $("choiceBtn").hidden = true;
+  const box = $("choices");
+  box.textContent = "";
+  makeChoices(cur, WORDS, 4, Math.random).forEach(zh => {
+    const b = document.createElement("button");
+    b.className = "ghost";
+    b.textContent = zh;
+    b.onclick = () => pickChoice(zh);
+    box.appendChild(b);
+  });
+}
+
+// 用途：記下選擇並顯示對錯；按「下一張」才寫進學習紀錄，重複點選不會重複計分
+function pickChoice(zh){
+  if (picked !== null) return;
+  picked = zh === cur.zh;
+  $("meaning").textContent = (picked ? "答對 ✓ " : "答錯 ✗ 正解：") + cur.zh;
+  $("choices").textContent = "";
+  $("nextBtn").hidden = false;
+  $("aiBtn").hidden = false;
+}
+
+// 用途：把四選一的對錯交給 mark()：答對升盒、答錯回盒 1 並排到今天隊尾
+function finishChoice(){
+  if (picked === null) return;
+  mark(picked);
 }
 
 // ---------- Sprint 2：AI 例句（fetch 直呼 API、使用者自帶金鑰、快取、降階） ----------

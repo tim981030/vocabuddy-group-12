@@ -1,5 +1,5 @@
-const CACHE = "ytp-vocabuddy-v3";     // E2：words.js、srs.js 改版 v2 → v3，舊快取才會換新
-const SHELL = ["./", "index.html", "words.js", "srs.js", "csv.js", "manifest.json", "icon.png"];  // Lab 10 加 csv.js；icon.png 見 E-025
+const CACHE = "ytp-vocabuddy-v4";     // E2：v3 改 words.js、srs.js；v4 加四選一（quiz.js），舊快取才會換新
+const SHELL = ["./", "index.html", "words.js", "srs.js", "csv.js", "quiz.js", "manifest.json", "icon.png"];  // Lab 10 加 csv.js；icon.png 見 E-025；E2 加 quiz.js
 
 self.addEventListener("install", e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(SHELL)));   // 安裝時先存一份

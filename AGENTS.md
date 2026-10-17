@@ -8,7 +8,7 @@
 ## 怎麼跑起來
 - 網頁：`cd app && python3 -m http.server 8000`，開 http://localhost:8000。不要用 file:// 開，service worker 會註冊失敗。
 - 測試一律在 `app/` 執行，全部都要通過：
-  `node test_srs.js`、`node test_csv.js`、`node check_words.js`、`node test_count_due.js`、`node test_quiz.js`、`node e2_contract.js`
+  `node test_srs.js`、`node test_csv.js`、`node check_words.js`、`node test_count_due.js`、`node test_quiz.js`、`node test_choice_flow.js`、`node e2_contract.js`
 - `e2_contract.js` 是助教提供的合約測試，只能執行，不能修改。
 
 ## 程式碼慣例
