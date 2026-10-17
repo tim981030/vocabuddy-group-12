@@ -8,13 +8,13 @@
 ## 怎麼跑起來
 - 網頁：`cd app && python3 -m http.server 8000`，開 http://localhost:8000。不要用 file:// 開，service worker 會註冊失敗。
 - 測試一律在 `app/` 執行，全部都要通過：
-  `node test_srs.js`、`node test_csv.js`、`node check_words.js`、`node test_count_due.js`、`node e2_contract.js`
+  `node test_srs.js`、`node test_csv.js`、`node check_words.js`、`node test_count_due.js`、`node test_quiz.js`、`node e2_contract.js`
 - `e2_contract.js` 是助教提供的合約測試，只能執行，不能修改。
 
 ## 程式碼慣例
 - 2 空格縮排、`const`／`let`、函式小駝峰；不引入任何框架與套件。
 - **每個新函式上方加一行 `// 用途：…`**（繁體中文）。
-- 邏輯寫成純函式（例如 `srs.js`、`csv.js`）：不碰 DOM、不碰 localStorage、不讀時鐘，`today` 由呼叫端傳入。
+- 邏輯寫成純函式（例如 `srs.js`、`csv.js`、`quiz.js`）：不碰 DOM、不碰 localStorage、不讀時鐘，`today` 由呼叫端傳入。
 - 純函式檔尾用 `if (typeof module !== "undefined") module.exports = {...}`，只新增匯出，不刪既有匯出。
 - 新增純函式要附 Node 測試檔 `test_*.js`（只用內建 `assert`）。
 - 改了前端檔案或新增檔案時，同步更新 `sw.js` 的 `CACHE` 版本，並把新檔加進 `SHELL`。
