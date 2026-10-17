@@ -1,0 +1,9 @@
+{
+  "name": "YTP VocaBuddy 背單字夥伴",
+  "short_name": "VocaBuddy",
+  "start_url": ".",
+  "display": "standalone",
+  "background_color": "#f4f6f5",
+  "theme_color": "#0f766e",
+  "icons": [{ "src": "icon.png", "sizes": "512x512", "type": "image/png" }]
+}

@@ -1,0 +1,13 @@
+const assert=require('assert');
+const w=require('./words.js');
+for(const en of ['loop','variable','debug']) assert.strictEqual(w.filter(x=>x.en===en).length,1);
+const {countDue,schedule}=require('./srs.js');
+assert.strictEqual(typeof countDue,'function');
+assert.strictEqual(countDue([],100),0);
+const a=[{due:99},{due:100},{due:101}]; const b=JSON.stringify(a);
+assert.strictEqual(countDue(a,100),2);
+assert.strictEqual(countDue(a,100),2);
+assert.strictEqual(countDue([{due:101}],100),0);
+assert.strictEqual(JSON.stringify(a),b);
+assert.deepStrictEqual(schedule(1,true,100),{box:2,due:102});
+console.log('E2 contract passed');

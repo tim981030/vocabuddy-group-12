@@ -1,0 +1,37 @@
+code-reviewer 子代理看完了 diff，也讀了 `app/` 下的 index.html、srs.js、sw.js、words.js、check_words.js。它沒有跑任何測試，我也沒有改任何檔案。
+
+## 結論
+這份 diff 沒有非修不可的問題，**可以合併**。不過子代理建議 sw.js 的快取問題在同一個 PR 或下一個 fix PR 一起修，否則舊使用者拿不到這次的新功能。合併前，組員還要照 AGENTS.md 在 `app/` 下自己跑完 7 個測試，貼出真實輸出。
+
+## 發現（嚴重度由高到低）
+
+1. **中（建議）`app/sw.js:10`：把 CACHE 升到 v5，舊使用者還是拿不到新版**
+   - 原因一：sw.js 沒有 `activate` 監聽，舊快取不會被刪掉。
+   - 原因二：`caches.match(e.request)` 會搜尋所有快取，最先找到的是舊的 v2。
+   - 結果：裝過 Lab 10 版的人，畫面會一直停在舊版，看不到四選一按鈕和新單字。
+   - 建議修法（二選一）：
+     - 加一個 `activate` 監聽，刪掉名稱不是 `CACHE` 的快取，並呼叫 `self.clients.claim()`。
+     - 或把第 10 行改成 `caches.open(CACHE).then(c => c.match(e.request))`。
+   - 修完再把 CACHE 升一版。這段程式這次沒動，但版本升級要靠它才會生效。
+
+2. **低 `app/index.html:163`：統計列兩個數字會對不上**
+   - 情境：第一張答錯後，它還留在今天的佇列裡，但排程已經改到明天，所以會顯示「剩 26 張｜今天到期：25 張」，看起來像算錯。test_choice_flow.js 第 4 段也把這個結果寫成了預期值。
+   - 建議：把標籤改清楚，例如「排程今天到期：」，或在旁邊加說明。
+
+3. **低 `app/test_choice_flow.js:4`、`:27`：檔案路徑依目前所在目錄而定**
+   - 情境：在專案根目錄執行 `node app/test_choice_flow.js` 會出現 ENOENT（找不到檔案）。
+   - 建議：改用 `path.join(__dirname, ...)`。
+
+4. **低 `app/test_quiz.js:6`、`app/test_choice_flow.js:8`：註解格式不符規範**
+   - `seeded` 和 `fakeElement` 上方不是 AGENTS.md 規定的 `// 用途：…` 格式。
+
+## 子代理確認沒問題的部分
+- **正確性**：重複點選項、還沒作答就按「下一張」、佇列清空、字庫不夠四個選項、選項中文重複、`due` 剛好等於今天，這些情況都有處理。`picked` 雖然宣告在 `next()` 定義之後，但第一次呼叫 `next()` 時已經宣告好了，不會出錯。
+- **一致性**：quiz.js 和 countDue 都是純函式。module.exports 只有新增、沒有刪除。新函式都附了測試。SHELL 已加入 quiz.js。words.js 的格式沒變，既有單字沒有重排，英文單字也沒有重複。
+- **安全**：選項和對錯訊息都用 `textContent` 顯示，不會被當成 HTML 執行。diff 裡沒有 API 金鑰。
+- **e2_contract.js**：在這份 diff 裡它是新檔，子代理沒辦法和助教原版比對，請人工確認內容一致。
+
+## diff 範圍外的既有風險
+index.html 第 257、283、292、293 行用 `innerHTML` 插入 AI 回傳的內容，有 HTML 注入風險。子代理建議另開 issue 處理。
+
+子代理也註明這是機器初審，還需要人工 review。

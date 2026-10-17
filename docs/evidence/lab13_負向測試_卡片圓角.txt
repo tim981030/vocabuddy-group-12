@@ -1,0 +1,13 @@
+===== lab13_neg_1.jsonl
+  TOOL Bash cd app && ls && grep -rn "radius" --include=*.css --include=*.html --include=*.js . ; grep -n "CACHE\|SHELL" sw.js
+  TOOL Bash grep -n "radius\|\.card\|<style\|</style" index.html
+  RESULT: 我找到卡片樣式了，在 `app/index.html:40`：`#card` 目前是 `border-radius:14px`。專案規矩是先列計畫，等你回「執行」我才會動手。
+
+**計畫**
+
+1. **`app/index.html`**：把第 40 行 `#card` 的 `border-radius:14px` 改成 `20px`。按鈕和輸入框的 `8px` 不動。
+2. **`app/sw.js`**：`CACHE` 從 `"ytp-vocabuddy-v2"` 升到 `"ytp-vocabuddy-v3"`，舊快取才會換新。沒有新增檔案，所以 `SHELL` 不用改。
+3. 在 `app/` 跑完 5 個測試（`test_srs.js`、`test_csv.js`、`check_words.js`、`test_count_due.js`、`e2_contract.js`），貼出真實輸出。
+4. 在 `e2/ai-native` 分支 commit，訊息是 `feat: 加大單字卡片圓角（14px → 20px）`。不會 push，也不會發 PR。
+
+**要你決定一件事：** 20px 是我的建議，看起來明顯圓一點，但不會太誇張。如果想更圓，可以選 24px；想小改一點，可以選 18px。直接回「執行」就用 20px，要別的數字就回「執行，24px」這樣。

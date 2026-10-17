@@ -1,0 +1,61 @@
+這是 `countDue` 的計畫。我原本想把它存成計畫檔，但這個 session 不能寫檔，所以直接貼在這裡。專案裡的檔案都還沒動。
+
+## 計畫：新增純函式 `countDue`
+
+### 為什麼要做
+`index.html:113` 用 `WORDS.filter(w => stateOf(w).due <= today())` 算出今天要複習的單字。這段寫在碰 DOM 和 localStorage 的程式碼裡，沒辦法單獨測試。改成 `srs.js` 裡的純函式之後，就能用 Node 測試，以後 UI 要顯示「今日待複習 N 張」也可以直接呼叫。
+
+### 已經讀過的檔案
+- `app/srs.js`：現有的 `schedule`、`INTERVALS`，還有檔尾匯出的寫法
+- `app/test_srs.js`、`app/test_csv.js`：測試的寫法（`assert.deepStrictEqual`，最後 `console.log`）
+- `app/index.html:86-113`：`vb-log` 的結構是 `{ [en]: { seen, wrong, box, due } }`。`stateOf` 碰到沒有紀錄、或是缺 `box` 的舊紀錄時，會把它當成今天到期
+- `app/sw.js`：`CACHE = "ytp-vocabuddy-v2"`，`SHELL` 已經包含 `srs.js`
+
+### 設計
+- 寫法是 `countDue(words, log, today)`，回傳一個整數
+- 判斷規則跟 `stateOf` 一樣：沒有紀錄、或缺 `due` 的單字算到期，其他的看 `due <= today`
+- 不會修改傳進來的 `log`（`stateOf` 會寫回 `log`，這個函式不會）
+- `today` 由呼叫端傳進來，不在函式裡讀時鐘
+
+函式上方的註解和程式碼：
+```js
+// 用途：計算今天（today）已到期、該複習的單字數；沒有紀錄的新字也算到期
+function countDue(words, log, today){
+  return words.filter(w => {
+    const s = log[w.en];
+    return !s || s.due === undefined || s.due <= today;
+  }).length;
+}
+```
+匯出改成 `module.exports = { schedule, INTERVALS, countDue };`，只多加一項，原本的都不刪。
+
+### 會改的檔案（只有這 3 個）
+1. **`app/srs.js`**：加上 `countDue` 和它的註解，匯出也加上 `countDue`。
+2. **`app/test_srs.js`**：原本 4 條 assert 都留著，後面再加 `countDue` 的測試：
+   - 空陣列回傳 0
+   - 全部都沒有紀錄時，全部算到期
+   - `due < today` 和 `due === today` 算到期，`due > today` 不算
+   - 舊紀錄（有 `seen`，沒有 `box`/`due`）算到期
+   - 呼叫之後 `log` 沒有被改到（先複製一份，再用 `deepStrictEqual` 比對）
+   - 最後一行 `console.log` 改成新的測試總數
+3. **`app/sw.js`**：`CACHE` 從 `"ytp-vocabuddy-v2"` 改成 `"ytp-vocabuddy-v3"`。`srs.js` 本來就在 `SHELL` 裡，不用再加。
+
+不會動到：`index.html`（這次不接 UI）、`words.js`、`csv.js`、`check_words.js`、`VocaBuddy.ipynb`
+
+### 改完要跑的測試
+在 `app/` 底下跑下面三個，全部都要通過，我會貼出真實輸出：
+```
+node test_srs.js
+node test_csv.js
+node check_words.js
+```
+
+### Commit
+- `feat: 新增純函式 countDue 計算今日到期單字數`
+- 不 push，也不開 PR。
+
+有兩件事請你決定：
+1. 要不要順便在 `index.html` 接上 UI，顯示「今日待複習 N 張」？我建議這次先不要。
+2. 測試要加在 `test_srs.js`，還是另外開一個 `test_count_due.js`？我建議加在 `test_srs.js`，這樣 AGENTS.md 列的那三個測試指令就不用改。
+
+確認之後回覆「執行」，我就照這份計畫改。
