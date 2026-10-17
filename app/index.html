@@ -1,0 +1,298 @@
+<!--
+  PLAN｜Lab 10：發表與畢業——README 作品化、3 分鐘 Demo、畢業挑戰（單字包 CSV 匯入）
+  教材：https://tw-ytp.github.io/vocabuddy/#/lab10（v2.0，2026-09-08），內容照 4.5 與 Lab 10 頁
+  確認日期：2026-10-14（由 YTP 主辦確認後執行）
+  起點：Lab 9 成果複製到 labs/lab10-graduation/；ci.yml 改 matrix 同時測 lab09 與 lab10
+
+   1. issue 兩張：#29「README 作品化與 Demo 腳本」、#30「畢業挑戰：單字包 CSV 匯入」（#30 寫清楚驗收條件）。
+   2. PR 1（docs，分支 lab10/docs/readme，closes #29）：
+      README.md 照七段結構——一句話定位、Live 網址＋截圖＋CI 徽章、功能清單、技術與架構（四層 Mermaid
+      圖＋隱私一句）、本地執行三行、Roadmap、作者與分工；Lab 指引放文末。
+      DEMO.md：照 4.5 時間表寫逐字稿、保命三招、預熱單字清單、互評三問。
+      截圖 screenshot-phone.png 先以無頭 Chromium iPhone 視口產生，主辦可換真機畫面。
+   3. PR 2（feat，分支 lab10/feature/csv-import，closes #30），測試先行：
+      csv.js 純函式 parseCSV(text)（BOM、CRLF、引號含逗號、空行、可選表頭）與
+      validateWords(rows, existing)（沿用 check_words.js 規則：欄位不可空、檔內與既有單字去重，逐行回報）。
+      test_csv.js 先寫、先紅後綠；CI 自動跑。
+      UI：「匯入單字」鈕 → textarea → 匯入結果逐行顯示；自訂單字存 localStorage vb-words，載入時併入 WORDS；
+      「清除匯入」一鍵移除。sw.js：CACHE 改 v2、SHELL 加 csv.js 與 icon.png（E-025）。
+      自我 review 留在 PR 上，再請主辦合併。
+   4. 驗收（本環境）：node 測試；無頭 Chromium 走匯入流程（合法、錯誤行、重複、引號、BOM）、重新整理仍在、
+      localhost 離線仍可用；Lab 5～9 回歸。
+   5. 需主辦：手機開 /labs/lab10-graduation/ 貼 CSV 實測；Demo 排練三次與 90 秒備援影片；
+      合併後建 Release v1.1（Target=main）。
+   6. 收尾：自評尺規四面向打分＋反思寫在 #30 結案留言；CHECKLIST.md（教材五項＋「每個 tag 代表什麼」回顧表）；
+      docs/LAB_GUIDE.md 第 10 列與段落；根 README Lab 表；ERRATA 如有。
+  適配：排練、錄影、互相 Demo 屬人的練習，由主辦做、本 repo 記錄；里程碑 tag 用 v1.1（v1.0 已在 Lab 9 建立）。
+-->
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#0f766e">
+<title>YTP VocaBuddy</title>
+<style>
+  body{font-family:system-ui,sans-serif;background:#f4f6f5;margin:0;padding:24px;text-align:center}
+  h1{color:#0f766e}
+  #stats{color:#666;font-size:.95rem}
+  #card{max-width:340px;margin:24px auto 8px;padding:36px 24px;background:#fff;border-radius:14px;
+        box-shadow:0 4px 16px rgba(0,0,0,.08);font-size:2rem;user-select:none}
+  #meaning{color:#0f766e;font-size:1.2rem;min-height:1.6em}
+  button{margin:8px 6px 0;padding:10px 22px;font-size:1rem;border:none;border-radius:8px;
+         background:#0f766e;color:#fff;cursor:pointer}
+  button.warn{background:#b3403a}
+  button.ghost{background:#fff;color:#0f766e;border:1px solid #0f766e}
+  #csv{width:100%;max-width:340px;height:120px;margin-top:8px;padding:8px;font:inherit;font-size:.95rem;
+       border:1px solid #bbb;border-radius:8px;box-sizing:border-box}
+  #importMsg{max-width:340px;margin:8px auto;color:#333;font-size:.95rem;text-align:left}
+  #importMsg .err{color:#b3403a}
+</style>
+</head>
+<body>
+<h1>YTP VocaBuddy</h1>
+<p id="stats"></p>
+<div id="card">—</div>
+<p id="meaning">&nbsp;</p>
+<p id="ai" style="max-width:340px;margin:8px auto;color:#555"></p>
+<div>
+  <button id="reveal" onclick="reveal()">顯示答案</button>
+  <button id="ok" onclick="mark(true)" hidden>記得 ✓</button>
+  <button id="no" onclick="mark(false)" class="warn" hidden>忘了 ✗</button>
+  <button id="aiBtn" onclick="aiExample()" hidden>AI 例句</button>
+</div>
+<div style="margin-top:20px">
+  <button onclick="smartQuiz()">考我弱點</button>
+  <div id="quiz" style="max-width:340px;margin:8px auto;color:#333"></div>
+</div>
+<div style="margin-top:20px">
+  <button id="importBtn" class="ghost" onclick="toggleImport()">匯入單字</button>
+  <div id="importBox" hidden>
+    <textarea id="csv" placeholder="每行一個：en,zh&#10;apple,蘋果&#10;&quot;give up&quot;,放棄"></textarea>
+    <div>
+      <button onclick="importCSV()">匯入</button>
+      <button id="clearBtn" class="warn" onclick="clearImported()">清除匯入</button>
+    </div>
+    <div id="importMsg"></div>
+  </div>
+</div>
+<script src="words.js"></script>
+<script src="srs.js"></script>
+<script src="csv.js"></script>
+<script>
+// 單字包已搬到 words.js（Sprint 4：全隊共編，進 Git）
+
+// 學習紀錄：只屬於這台裝置，所以放 localStorage（讀寫都包 try/catch）
+let log = {};
+try { log = JSON.parse(localStorage.getItem("vb-log")) || {}; } catch(e){}
+function save(){ try { localStorage.setItem("vb-log", JSON.stringify(log)); } catch(e){} }
+
+// —— 日期：以「第幾天」為單位，附時間旅行測試器 ——
+let dayOffset = 0;
+try { dayOffset = +localStorage.getItem("vb-day") || 0; } catch(e){}
+const today = () => Math.floor(Date.now() / 864e5) + dayOffset;
+window.vbTravel = n => {            // Console 輸入 vbTravel(1) 即快轉一天
+  try { localStorage.setItem("vb-day", dayOffset + n); } catch(e){}
+  location.reload();
+};
+
+function stateOf(w){
+  const s = log[w.en] || (log[w.en] = { seen:0, wrong:0 });
+  if (s.box === undefined){ s.box = 1; s.due = today(); }   // 舊紀錄自動升級
+  return s;
+}
+
+// ---------- 畢業挑戰：匯入的自訂單字存這台裝置的 localStorage，載入時併入 WORDS ----------
+function loadCustom(){
+  try { return JSON.parse(localStorage.getItem("vb-words")) || []; } catch(e){ return []; }
+}
+function saveCustom(list){ try { localStorage.setItem("vb-words", JSON.stringify(list)); } catch(e){} }
+WORDS.push(...loadCustom());          // WORDS 是 const 陣列，可以 push，不能重新指定
+
+let queue = WORDS.filter(w => stateOf(w).due <= today());   // 只複習「到期」的卡
+let cur = null;
+
+const $ = id => document.getElementById(id);
+
+function next(){
+  $("aiBtn").hidden = true;          // Sprint 2：換卡時藏回 AI 鈕、清空例句
+  $("ai").textContent = "";
+  if (queue.length === 0){
+    $("card").textContent = "今天沒有到期的卡——明天見！";
+    $("meaning").innerHTML = "&nbsp;";
+    $("reveal").hidden = $("ok").hidden = $("no").hidden = true;
+    return;
+  }
+  cur = queue[0];
+  $("card").textContent = cur.en;
+  $("meaning").innerHTML = "&nbsp;";
+  $("reveal").hidden = false;
+  $("ok").hidden = $("no").hidden = true;
+  stats();
+}
+
+function reveal(){
+  $("meaning").textContent = cur.zh;
+  $("reveal").hidden = true;
+  $("ok").hidden = $("no").hidden = false;
+  $("aiBtn").hidden = false;         // Sprint 2：翻面後才給 AI 例句
+}
+
+function mark(ok){
+  const s = stateOf(cur);
+  s.seen++; if (!ok) s.wrong++;
+  const r = schedule(s.box, ok, today());   // ← 排程交給純函式
+  s.box = r.box; s.due = r.due;
+  save();
+  if (ok) queue.shift();
+  else queue.push(queue.shift());   // 忘了的排到今天隊尾，等一下再考一次
+  next();
+}
+
+function stats(){
+  $("stats").textContent = "今日佇列：剩 " + queue.length + " 張";
+}
+
+// ---------- Sprint 2：AI 例句（fetch 直呼 API、使用者自帶金鑰、快取、降階） ----------
+const MODEL = "claude-sonnet-5-5";   // 教材 claude-sonnet-4-5 已非當前世代（勘誤 E-007）；最新名稱見附錄 B
+const API_VERSION = "2023-06-01";    // anthropic-version 標頭值，見附錄 B
+
+function getKey(){
+  let k = null;
+  try { k = localStorage.getItem("vb-key"); } catch(e){}
+  if (!k){
+    k = prompt("貼上你的 API key（只存在你自己的瀏覽器）");
+    try { localStorage.setItem("vb-key", k); } catch(e){}
+  }
+  return k;
+}
+
+// 回應的 content 是「區塊列表」，新模型可能先回 thinking 區塊，依 type 只挑 text（勘誤 E-009）
+const textOf = data => data.content.filter(b => b.type === "text").map(b => b.text).join("");
+
+// Sprint 4：把 Sprint 2 的 fetch 抽成共用函式（教材只說「抽成共用函式」未給程式，由本 repo 補；
+// 內容與 Lab 6 原碼相同，含四處新模型修改：MODEL E-007、無 temperature E-014、textOf E-009、max_tokens E-011）
+async function callClaude(system, user){
+  const res = await fetch("https://api.anthropic.com/v1/messages", {
+    method: "POST",
+    headers: {
+      "content-type": "application/json",
+      "x-api-key": getKey(),
+      "anthropic-version": API_VERSION,
+      "anthropic-dangerous-direct-browser-access": "true"  // 瀏覽器直呼必加，見附錄 B
+    },
+    body: JSON.stringify({
+      model: MODEL, max_tokens: 1024,   // 教材 300；thinking 的 token 也算在內（勘誤 E-011）
+      // 教材有 temperature: 0.3；claude-sonnet-5-5 不接受 temperature，會回 400（勘誤 E-014）
+      system: system,
+      messages: [{ role: "user", content: user }]
+    })
+  });
+  const data = await res.json();
+  return textOf(data);                              // 教材：data.content[0].text（勘誤 E-009）
+}
+
+async function aiExample(){
+  const word = cur.en, box = $("ai");
+  let cache = {};
+  try { cache = JSON.parse(localStorage.getItem("vb-ai")) || {}; } catch(e){}
+  if (cache[word]) return show(cache[word]);        // 快取命中：不花錢、離線可用
+  box.textContent = "生成中…";
+  try {
+    const c = JSON.parse(await callClaude(          // Sprint 4：fetch 抽成共用函式 callClaude()
+      '你是高中英語老師。只輸出 JSON：{"sentence":"...","zh":"...","tip":"..."}，不要 markdown 圍欄',
+      "用單字 " + word + " 造一個 CEFR B1 例句、中譯與聯想"));
+    if (!c.sentence.toLowerCase().includes(word.toLowerCase()))
+      throw new Error("例句沒包含目標單字");
+    cache[word] = c;
+    try { localStorage.setItem("vb-ai", JSON.stringify(cache)); } catch(e){}
+    show(c);
+  } catch (e) {
+    box.textContent = "AI 暫時不可用——不影響複習，例句之後再補。";
+  }
+  function show(c){
+    box.innerHTML = "<em>" + c.sentence + "</em><br>" + c.zh + "<br>聯想：" + c.tip;
+  }
+}
+
+// ---------- Sprint 4：弱點檢索（RAG-lite）與智慧出題 ----------
+function weakest(k){
+  return WORDS
+    .map(w => { const s = log[w.en] || {seen:0, wrong:0};
+                return { en: w.en, zh: w.zh, rate: s.wrong / (s.seen || 1) }; })
+    .sort((a, b) => b.rate - a.rate)
+    .slice(0, k);
+}
+
+async function smartQuiz(){
+  const t = weakest(3);
+  const box = $("quiz");
+  box.textContent = "出題中…";
+  try {
+    const text = await callClaude(                       // 把 Sprint 2 的 fetch 抽成共用函式
+      '你是出題老師。只輸出 JSON：{"question":"...","options":["..","..","..",".."],' +
+      '"answer":"..","why":".."}。question 是含 ____ 的英文克漏字句。不要 markdown 圍欄。',
+      "使用者最常錯的單字：" + t.map(w => w.en + "（" + w.zh + "）").join("、") +
+      "。從中挑一個出一題四選一，選項要包含正確答案與三個貼近的干擾項。");
+    const q = JSON.parse(text);
+    if (!Array.isArray(q.options) || q.options.length !== 4 ||
+        !q.options.includes(q.answer)) throw new Error("題目格式不合格");
+    box.innerHTML = "<p>" + q.question + "</p>";
+    q.options.forEach(op => {
+      const b = document.createElement("button");
+      b.textContent = op;
+      b.onclick = () => {
+        const ok = op === q.answer;
+        const s = log[q.answer] || (log[q.answer] = {seen:0, wrong:0});
+        s.seen++; if (!ok) s.wrong++;                     // 答題結果寫回紀錄：閉環
+        save();
+        box.innerHTML += ok ? "<p>答對！" + q.why + "</p>"
+                            : "<p>正解：" + q.answer + "。" + q.why + "</p>";
+      };
+      box.appendChild(b);
+    });
+  } catch (e) {
+    box.textContent = "AI 暫時不可用，先用單字卡複習吧。";
+  }
+}
+
+// ---------- 畢業挑戰：單字包 CSV 匯入（解析與驗證是 csv.js 的純函式；這裡只管畫面與儲存） ----------
+function toggleImport(){
+  const box = $("importBox");
+  box.hidden = !box.hidden;
+  if (!box.hidden) $("csv").focus();
+}
+
+function importCSV(){
+  const { ok, errors } = validateWords(parseCSV($("csv").value), WORDS);   // 既有＝words.js＋先前匯入
+  const msg = $("importMsg");
+  msg.textContent = "";
+  if (ok.length){
+    saveCustom(loadCustom().concat(ok));
+    WORDS.push(...ok);
+    ok.forEach(w => { if (stateOf(w).due <= today() && !queue.includes(w)) queue.push(w); });   // 新字今天就到期
+    if (!cur || queue.length === ok.length) next(); else stats();   // 原本已複習完就直接出卡，否則只更新張數
+    $("csv").value = "";
+  }
+  // 訊息用 textContent 逐行建立，CSV 裡的內容原樣顯示、不會被當成 HTML（對照 E-015）
+  const line = (text, cls) => { const d = document.createElement("div"); d.textContent = text; if (cls) d.className = cls; msg.appendChild(d); };
+  line("匯入 " + ok.length + " 個單字" + (ok.length ? "：" + ok.map(w => w.en).join("、") : ""));
+  errors.forEach(e => line("第 " + e.line + " 行：" + e.reason, "err"));
+}
+
+function clearImported(){
+  const custom = loadCustom();
+  if (!custom.length){ $("importMsg").textContent = "沒有匯入過的單字。"; return; }
+  if (!confirm("移除 " + custom.length + " 個匯入的單字？學習紀錄會保留。")) return;
+  saveCustom([]);
+  location.reload();                     // 最簡單可靠的「重算佇列」：重新載入，只剩 words.js 的字
+}
+
+next();
+
+// script 最末尾：註冊 service worker（Lab 9 PWA）
+if ("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js");
+</script>
+</body>
+</html>
