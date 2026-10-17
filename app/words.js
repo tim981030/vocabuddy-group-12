@@ -12,6 +12,10 @@ const WORDS = [
   {en:"butterfly", zh:"蝴蝶"},      {en:"crocodile", zh:"鱷魚"},
   // 程式主題單字（E2 AI Native 工作坊）
   {en:"loop", zh:"迴圈"},           {en:"variable", zh:"變數"},
-  {en:"debug", zh:"除錯"}
+  {en:"debug", zh:"除錯"},
+  // Git 協作主題單字（沿用第 12 組 E1 VocaBuddy.ipynb 的單字本）
+  {en:"collaboration", zh:"合作；協作"}, {en:"repository", zh:"倉庫；儲存庫"},
+  {en:"commit", zh:"提交（版本紀錄）；承諾"}, {en:"notebook", zh:"筆記本；（Colab）筆記本檔案"},
+  {en:"review", zh:"檢查；複習；審查"}
 ];
 if (typeof module !== "undefined") module.exports = WORDS;
