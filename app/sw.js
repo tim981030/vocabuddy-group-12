@@ -1,4 +1,4 @@
-const CACHE = "ytp-vocabuddy-v2";     // Lab 10 改版：v1 → v2，舊快取才會換新
+const CACHE = "ytp-vocabuddy-v3";     // E2：words.js、srs.js 改版 v2 → v3，舊快取才會換新
 const SHELL = ["./", "index.html", "words.js", "srs.js", "csv.js", "manifest.json", "icon.png"];  // Lab 10 加 csv.js；icon.png 見 E-025
 
 self.addEventListener("install", e => {
