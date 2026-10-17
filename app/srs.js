@@ -7,5 +7,12 @@ function schedule(box, ok, today){
   return { box: nb, due: today + INTERVALS[nb] };
 }
 
+// 用途：計算 states 中 due <= today（今天或更早到期）的筆數；不改輸入、不讀時鐘
+function countDue(states, today){
+  let n = 0;
+  for (const s of states) if (s.due <= today) n++;
+  return n;
+}
+
 // 讓 Node（測試）與瀏覽器（App）都能用這個檔案
-if (typeof module !== "undefined") module.exports = { schedule, INTERVALS };
+if (typeof module !== "undefined") module.exports = { schedule, INTERVALS, countDue };
