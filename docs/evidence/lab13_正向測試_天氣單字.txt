@@ -1,0 +1,53 @@
+===== lab13_pos_1.jsonl
+  TOOL Skill add-words
+  TOOL Bash cd app && cat words.js && grep -n "CACHE\|SHELL" sw.js && git status --short
+  RESULT: 依專案規矩，我先列出計畫，等你回覆「執行」後再動手。
+
+## 計畫：新增 3 個「天氣」主題單字
+
+**目前狀態**：`words.js` 共 21 字，裡面沒有天氣類單字，下面 3 個都不會重複。分支是 `e2/ai-native`，不在 `main` 上。
+
+**1. `app/words.js`**：在陣列最後，接在 `debug` 後面加上：
+```js
+  // 天氣主題單字（E2 AI Native 工作坊）
+  {en:"forecast", zh:"天氣預報"},   {en:"humid", zh:"潮濕的"},
+  {en:"thunder", zh:"雷"}
+```
+只有 `en`、`zh` 兩個欄位，既有單字的順序不動。
+
+**2. `app/sw.js`**：`CACHE` 從 `ytp-vocabuddy-v2` 改成 `ytp-vocabuddy-v3`。這次沒有新增檔案，所以 `SHELL` 不用改。
+
+**3. 驗證**：在 `app/` 跑全部 5 個測試（`test_srs.js`、`test_csv.js`、`check_words.js`、`test_count_due.js`、`e2_contract.js`），並貼出真實輸出。`check_words.js` 應該會顯示共 24 字。
+
+**4. Commit**：測試全過才提交，訊息是 `feat: 新增 3 個「天氣」主題單字`。我不會 push，也不會發 PR。
+
+只會改 `app/words.js` 和 `app/sw.js` 這兩個檔案。如果想換別的單字（例如 `rain`、`cloud`、`typhoon`），可以直接告訴我。沒問題就回覆「執行」。
+===== lab13_pos_2.jsonl
+  TOOL Read ex
+  TOOL Read ex
+  TOOL Edit ex
+  TOOL Edit ex
+  TOOL Bash cd app && for t in test_srs.js test_csv.js check_words.js test_count_due.js e2_contract.js; do echo "=== node $t"; node 
+  TOOL Bash git add words.js sw.js && git commit -q -m "feat: 新增 3 個「天氣」主題單字" && git log --oneline -1 && git status --short
+  RESULT: I added 3 weather words. All 5 tests passed and the change is committed on `e2/ai-native`. I didn't push or open a PR.
+
+**Changes** (only these two files, as planned)
+- `app/words.js`: I added a `// 天氣主題單字` comment at the end of the list, then the 3 words: `forecast` 天氣預報, `humid` 潮濕的, `thunder` 雷. None of them was already in the list, so nothing was skipped. The existing words are in the same order as before.
+- `app/sw.js`: I changed `CACHE` from `ytp-vocabuddy-v2` to `ytp-vocabuddy-v3` so browsers load the new word list instead of the old cached copy.
+
+**Test output (run in `app/`)**
+```
+=== node test_srs.js
+4 tests passed ✓
+=== node test_csv.js
+CSV tests passed ✓
+=== node check_words.js
+words.js 檢查通過，共 24 字 ✓
+=== node test_count_due.js
+6 countDue tests passed ✓
+=== node e2_contract.js
+E2 contract passed
+```
+Every test exited with 0. The list now has 24 words (21 + 3), and `e2_contract.js` passing confirms `loop`, `variable` and `debug` are still intact.
+
+**Commit**: `34858b1 feat: 新增 3 個「天氣」主題單字`. The pushing and the PR are up to you.

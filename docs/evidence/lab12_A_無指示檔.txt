@@ -1,0 +1,49 @@
+我讀完了相關的檔案，原本要把計畫存到計畫檔，但這個 session 不能用 Write，所以直接把計畫列在下面。所有檔案都沒有改。
+
+# 計畫：在 `app/srs.js` 新增純函式 `countDue`
+
+## 會讀的檔案（都已經讀過）
+- **`app/srs.js`**：新函式要放在這裡。`schedule(box, ok, today)` 的 `today` 由呼叫端傳入，不自己看時鐘，`countDue` 也照這個寫法。
+- **`app/test_srs.js`**：照它的測試寫法，用 `assert.deepStrictEqual` 加行尾中文註解，最後印出 `N tests passed ✓`。
+- **`app/index.html:94-113`**：這段決定了 `countDue` 要怎麼判斷到期：
+  - 日期用「第幾天」的整數表示（`today()`）。
+  - 到期的條件是 `due <= today`。
+  - 舊紀錄如果沒有 `due`，`stateOf` 會把它補成今天，所以這種紀錄也算到期。
+- **`app/csv.js`**：參考函式上方中文註解的寫法：第一行寫輸入 → 輸出，後面補規則。
+
+## 實作（加在 `schedule` 後面）
+函式上方會放這兩行註解：
+
+```js
+// 狀態陣列 → 到期張數。到期 = due <= today（和 index.html 的複習佇列同一條規則）；
+// 沒有 due 的舊紀錄算到期（stateOf 會把它補成今天）。today 由呼叫端傳入，不自己看時鐘
+function countDue(states, today){
+  return states.filter(s => s.due === undefined || s.due <= today).length;
+}
+```
+
+- 沒有 `due` 的紀錄要特別判斷。JS 裡 `undefined <= today` 會得到 `false`，不判斷的話這種紀錄就會被漏算。
+- export 改成 `{ schedule, countDue, INTERVALS }`。
+- 參數是狀態陣列，不是整個 `log` 物件。之後要接到畫面時，可以寫 `countDue(WORDS.map(stateOf), today())`。
+- 這次不改 `index.html`。`sw.js` 也不用改，因為檔名沒變。
+
+## 測試（先寫測試，先看到失敗再寫實作）
+在 `app/test_srs.js` 現有的 4 條後面加 5 條：
+1. 空陣列 → 0
+2. `due` 剛好等於 today → 算到期（`<=` 的邊界）
+3. `due` 是 today 的隔天 → 不算到期
+4. 到期和沒到期的混在一起 → 只算到期的
+5. 有一筆沒有 `due` → 算到期
+
+最後一行改成 `9 tests passed ✓`。
+
+## 修改後會跑的指令
+```sh
+node app/test_srs.js      # 加完測試先跑一次，應該會失敗；寫完實作後要看到 9 tests passed ✓
+node app/test_csv.js      # 回歸測試
+node app/check_words.js   # 回歸測試：單字包檢查照樣通過
+```
+
+`index.html` 沒有改，所以不跑瀏覽器測試。
+
+有一點想先確認：你要的是只新增函式和測試，還是也要把到期張數接到畫面上（例如 `#stats`）？計畫目前只做前者。確認沒問題的話，我就照這個計畫開始改。
