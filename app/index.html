@@ -122,6 +122,7 @@ function next(){
     $("card").textContent = "今天沒有到期的卡——明天見！";
     $("meaning").innerHTML = "&nbsp;";
     $("reveal").hidden = $("ok").hidden = $("no").hidden = true;
+    stats();                          // 佇列清空也要更新張數，不然會停在「剩 1 張」
     return;
   }
   cur = queue[0];
