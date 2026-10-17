@@ -160,7 +160,7 @@ function mark(ok){
 
 function stats(){
   const dueToday = countDue(WORDS.map(stateOf), today());   // 第 12 組：接上 srs.js 的 countDue
-  $("stats").textContent = "今日佇列：剩 " + queue.length + " 張｜今天到期：" + dueToday + " 張";
+  $("stats").textContent = "今日佇列：剩 " + queue.length + " 張｜依排程今天到期：" + dueToday + " 張";
 }
 
 // ---------- 第 12 組延伸：四選一作答（出題是 quiz.js 的純函式；結果交給 mark()，和「記得／忘了」走同一條排程） ----------

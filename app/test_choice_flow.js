@@ -1,10 +1,11 @@
 // 四選一作答的流程測試：在 Node 的 vm 裡用假的 DOM 和 localStorage 執行 index.html 的程式（只用內建模組）
-const fs = require("fs"), vm = require("vm"), assert = require("assert");
+const fs = require("fs"), vm = require("vm"), path = require("path"), assert = require("assert");
+const read = name => fs.readFileSync(path.join(__dirname, name), "utf8");   // 從哪個資料夾執行都讀得到
 
-const html = fs.readFileSync("index.html", "utf8");
+const html = read("index.html");
 const inline = html.match(/<script>([\s\S]*?)<\/script>/)[1];
 
-// 假元素：textContent 設成空字串會清掉子元素，跟瀏覽器一樣
+// 用途：建立假元素；textContent 設成空字串會清掉子元素，跟瀏覽器一樣
 function fakeElement(){
   const el = { hidden: false, value: "", innerHTML: "", className: "", children: [], focus(){},
                appendChild(c){ this.children.push(c); } };
@@ -23,7 +24,7 @@ const context = vm.createContext({
   localStorage: { getItem: k => (k in memory ? memory[k] : null), setItem: (k, v) => { memory[k] = String(v); } },
   navigator: {}, window: {}, location: { reload(){} }, console, Date, confirm: () => true
 });
-for (const file of ["words.js", "srs.js", "csv.js", "quiz.js"]) vm.runInContext(fs.readFileSync(file, "utf8"), context);
+for (const file of ["words.js", "srs.js", "csv.js", "quiz.js"]) vm.runInContext(read(file), context);
 vm.runInContext(inline, context);
 const run = code => vm.runInContext(code, context);
 const day = run("today()");
@@ -31,7 +32,7 @@ const total = run("WORDS.length");
 
 // 1. 開啟時：第一張卡、統計列接上 countDue
 assert.strictEqual($("card").textContent, "algorithm");
-assert.strictEqual($("stats").textContent, "今日佇列：剩 " + total + " 張｜今天到期：" + total + " 張");
+assert.strictEqual($("stats").textContent, "今日佇列：剩 " + total + " 張｜依排程今天到期：" + total + " 張");
 assert.strictEqual($("choiceBtn").hidden, false);
 
 // 2. 按「四選一作答」：出四個不重複選項，含正解；顯示答案鈕藏起來
@@ -56,7 +57,7 @@ assert.deepStrictEqual(JSON.parse(memory["vb-log"]).algorithm, { seen: 1, wrong:
 assert.strictEqual(run("queue[queue.length - 1].en"), "algorithm");
 assert.strictEqual($("card").textContent, "recursion");
 assert.strictEqual($("choices").children.length, 0);
-assert.strictEqual($("stats").textContent, "今日佇列：剩 " + total + " 張｜今天到期：" + (total - 1) + " 張");
+assert.strictEqual($("stats").textContent, "今日佇列：剩 " + total + " 張｜依排程今天到期：" + (total - 1) + " 張");
 
 // 5. 選對：交給 mark(true)——升到盒 2、兩天後到期、離開佇列
 run("startChoice()");
@@ -72,6 +73,6 @@ assert.strictEqual(run("stateOf(cur).seen"), 0);
 
 // 7. 全部記得到佇列清空：統計列要歸零（修正前會停在「剩 1 張」），作答鈕藏起來
 run("while (queue.length) mark(true)");
-assert.strictEqual($("stats").textContent, "今日佇列：剩 0 張｜今天到期：0 張");
+assert.strictEqual($("stats").textContent, "今日佇列：剩 0 張｜依排程今天到期：0 張");
 assert.strictEqual($("choiceBtn").hidden, true);
 console.log("choice flow tests passed ✓（出題、選錯、防重複、選對、未作答、清空）");

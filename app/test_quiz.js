@@ -2,7 +2,7 @@ const assert = require("assert");
 const { shuffle, makeChoices } = require("./quiz.js");
 const WORDS = require("./words.js");
 
-// 固定種子的亂數，讓測試可重現
+// 用途：固定種子的亂數，讓測試可重現
 function seeded(seed){
   return () => (seed = (seed * 16807) % 2147483647) / 2147483647;
 }
